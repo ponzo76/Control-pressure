@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ponzo’ Pressure</title>
+
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0d0d0d;
+    --fg: #f2f2f2;
+    --accent: #4caf50;
+    --danger: #d9534f;
+    --border: #333;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-rounded, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 20px;
+    font-size: 20px;
+  }
+
+  h2 {
+    color: var(--accent);
+    font-size: 30px;
+    margin-bottom: 20px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  .input-group {
+    margin-bottom: 14px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
+
+  input {
+    width: 100%;
+    padding: 14px;
+    font-size: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #1a1a1a;
+    color: var(--fg);
+  }
+
+  button {
+    width: 100%;
+    padding: 16px;
+    margin-top: 10px;
+    font-size: 20px;
+    border-radius: 12px;
+    border: none;
+    background: #222;
+    color: var(--fg);
+    transition: 0.2s;
+  }
+
+  button:active {
+    transform: scale(0.97);
+  }
+
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+
+  .table-container {
+    overflow-x: auto;
+    margin-top: 24px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+  }
+
+  th, td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    font-size: 18px;
+  }
+
+  th {
+    background: #111;
+    font-weight: 600;
+  }
+</style>
+</head>
+
+<body>
+
+<h2>Ponzo’ Pressure</h2>
+
+<div class="input-group">
+  <label>Sistolica</label>
+  <input type="number" id="sys">
+</div>
+
+<div class="input-group">
+  <label>Diastolica</label>
+  <input type="number" id="dia">
+</div>
+
+<div class="input-group">
+  <label>Battiti</label>
+  <input type="number" id="hr">
+</div>
+
+<div class="input-group">
+  <label>Note</label>
+  <input type="text" id="note">
+</div>
+
+<button class="btn-accent" onclick="addEntry()">Aggiungi</button>
+<button onclick="undoEntry()">Annulla ultimo inserimento</button>
+<button onclick="exportTXT()">Esporta TXT</button>
+<button onclick="exportJSON()">Esporta JSON</button>
+<button class="btn-danger" onclick="deleteAll()">Reset totale</button>
+
+<div class="table-container">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Timestamp</th>
+        <th>SYS</th>
+        <th>DIA</th>
+        <th>HR</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+  let data = JSON.parse(localStorage.getItem("bpdata") || "[]");
+
+  function save() {
+    localStorage.setItem("bpdata", JSON.stringify(data));
+  }
+
+  function render() {
+    const tbody = document.querySelector("#tbl tbody");
+    tbody.innerHTML = "";
+    data.forEach(entry => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${entry.id}</td>
+        <td>${entry.timestamp}</td>
+        <td>${entry.sys}</td>
+        <td>${entry.dia}</td>
+        <td>${entry.hr || "-"}</td>
+        <td>${entry.note || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function addEntry() {
+    const sys = document.getElementById("sys").value;
+    const dia = document.getElementById("dia").value;
+    const hr  = document.getElementById("hr").value;
+    const note = document.getElementById("note").value;
+
+    if (!sys || !dia) {
+      alert("SYS e DIA sono obbligatori.");
+      return;
+    }
+
+    const entry = {
+      id: crypto.randomUUID().slice(0, 8),
+      timestamp: new Date().toLocaleString(),
+      sys, dia, hr, note
+    };
+
+    data.push(entry);
+    save();
+    render();
+  }
+
+  function undoEntry() {
+    if (data.length === 0) {
+      alert("Nessun dato da annullare.");
+      return;
+    }
+
+    if (confirm("Vuoi davvero annullare l’ultimo inserimento?") &&
+        confirm("Sei sicuro? L’azione è irreversibile.")) {
+      data.pop();
+      save();
+      render();
+    }
+  }
+
+  function deleteAll() {
+    if (data.length === 0) {
+      alert("Nessun dato da eliminare.");
+      return;
+    }
+
+    if (confirm("Vuoi davvero cancellare TUTTI i dati?") &&
+        confirm("Confermi di voler eliminare tutto definitivamente?")) {
+      data = [];
+      save();
+      render();
+    }
+  }
+
+  function exportTXT() {
+    let lines = ["# Ponzo’ Pressure Export", ""];
+    data.forEach(e => {
+      lines.push(`${e.id} | ${e.timestamp} | ${e.sys}/${e.dia} | HR:${e.hr || "-"} | ${e.note || ""}`);
+    });
+    download(lines.join("\n"), "ponzo_pressure.txt");
+  }
+
+  function exportJSON() {
+    download(JSON.stringify(data, null, 2), "ponzo_pressure.json");
+  }
+
+  function download(content, filename) {
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  render();
+</script>
+
+</body>
+</html>
