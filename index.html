@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Album Tracker</title>
+    
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #121212; --card: #1e1e1e; --accent: #1DB954; --text: #ffffff; --sub: #b3b3b3; --done: #2a2a2a; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-top: 60px; }
+        
+        h1 { font-size: 1.8rem; margin-bottom: 20px; color: var(--accent); letter-spacing: -1px; }
+        
+        #search {
+            width: 100%; padding: 15px; border-radius: 12px; border: none; 
+            background: var(--card); color: white; margin-bottom: 25px; box-sizing: border-box;
+            font-size: 1rem; border: 1px solid #333; outline: none;
+        }
+
+        .album-card {
+            background: var(--card); border-radius: 16px; padding: 18px; 
+            margin-bottom: 15px; display: flex; flex-direction: column;
+            border: 1px solid #333; position: relative; transition: 0.3s;
+        }
+
+        /* Stato Ascoltato */
+        .album-card.completed { opacity: 0.4; background: var(--done); filter: grayscale(0.5); }
+
+        .info { margin-bottom: 15px; }
+        .title { font-weight: 700; font-size: 1.2rem; margin-bottom: 4px; }
+        .artist { color: var(--sub); font-size: 0.95rem; margin-bottom: 6px; }
+        .meta { font-size: 0.8rem; color: #ffcc00; font-weight: bold; }
+        
+        .actions { display: flex; gap: 10px; }
+        
+        .play-btn {
+            flex: 2; background: var(--accent); color: black; text-decoration: none;
+            padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .check-btn {
+            flex: 1; background: #333; color: white; border: none;
+            padding: 12px; border-radius: 10px; font-weight: bold; font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🎧 Archivio Album</h1>
+    
+    <input type="text" id="search" placeholder="Cerca artista, genere o mood..." onkeyup="filterAlbums()">
+
+    <div id="album-list">
+        
+        <div class="album-card" data-tags="pink floyd prog rock 70s">
+            <div class="info">
+                <div class="title">Animals</div>
+                <div class="artist">Pink Floyd (1977)</div>
+                <div class="meta">⭐ RYM: 4.29</div>
+            </div>
+            <div class="actions">
+                <a href="spotify:search:Pink%20Floyd%20Animals" class="play-btn">ASCOLTA</a>
+                <button class="check-btn" onclick="toggleDone(this)">FATTO</button>
+            </div>
+        </div>
+
+        <div class="album-card" data-tags="kendrick lamar rap hiphop 2010s">
+            <div class="info">
+                <div class="title">To Pimp a Butterfly</div>
+                <div class="artist">Kendrick Lamar (2015)</div>
+                <div class="meta">⭐ RYM: 4.35</div>
+            </div>
+            <div class="actions">
+                <a href="spotify:search:Kendrick%20Lamar%20To%20Pimp%20a%20Butterfly" class="play-btn">ASCOLTA</a>
+                <button class="check-btn" onclick="toggleDone(this)">FATTO</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function filterAlbums() {
+            let input = document.getElementById('search').value.toLowerCase();
+            let cards = document.getElementsByClassName('album-card');
+            for (let i = 0; i < cards.length; i++) {
+                let text = cards[i].innerText.toLowerCase() + cards[i].getAttribute('data-tags');
+                cards[i].classList.toggle('hidden', !text.includes(input));
+            }
+        }
+
+        function toggleDone(btn) {
+            let card = btn.closest('.album-card');
+            card.classList.toggle('completed');
+            btn.innerText = card.classList.contains('completed') ? 'RIPRISTINA' : 'FATTO';
+        }
+    </script>
+</body>
+</html>
