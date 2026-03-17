@@ -60,7 +60,18 @@
     <input type="text" id="search" placeholder="Cerca artista, genere o mood..." onkeyup="filterAlbums()">
 
     <div id="album-list">
-        
+             <div class="album-card" data-tags="radiohead ok computer art rock alternative 90s dystopian melancholic">
+            <div class="info">
+                <div class="title">OK Computer</div>
+                <div class="artist">Radiohead (1997)</div>
+                <div class="meta">⭐ RYM: 4.27 | 🏛️ Pietra Miliare</div>
+            </div>
+            <div class="actions">
+                <a href="spotify:search:Radiohead%20OK%20Computer" class="play-btn">ASCOLTA</a>
+                <button class="check-btn" onclick="toggleDone(this)">FATTO</button>
+            </div>
+        </div>
+   
         <div class="album-card" data-tags="pink floyd prog rock 70s">
             <div class="info">
                 <div class="title">Animals</div>
