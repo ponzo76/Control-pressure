@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponzo’ Archive</title>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent: #1db954; /* Verde Spotify-inspired */
+            --accent-hover: #1ed760;
+            --border: #333;
+            --modal-bg: #1a1a1a;
+            --input-bg: #2a2a2a;
+            --input-border: #444;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        h1 { 
+            text-align: center; 
+            color: var(--accent); 
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px var(--accent);
+        }
+        .form-add { 
+            background: var(--bg-secondary); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+        input, textarea, button { 
+            margin: 8px; 
+            padding: 12px; 
+            border-radius: 8px;
+            border: 1px solid var(--input-border);
+            font-size: 16px;
+        }
+        input, textarea {
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-secondary); }
+        button { 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background: var(--accent-hover); }
+        .album-card { 
+            background: var(--bg-secondary); 
+            margin: 15px 0; 
+            padding: 20px; 
+            cursor: pointer; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .album-card:hover { 
+            background: #2a2a2a; 
+            box-shadow: 0 4px 12px rgba(29, 185, 84, 0.3);
+            transform: translateY(-2px);
+        }
+        .cover { 
+            width: 100px; 
+            height: 100px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            margin-right: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+        .album-info h3 { margin: 0 0 5px 0; color: var(--text-primary); }
+        .album-info p { margin: 0 0 5px 0; color: var(--text-secondary); }
+        .album-info small { color: var(--text-secondary); }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 1000; 
+            backdrop-filter: blur(5px);
+        }
+        .modal-content { 
+            background: var(--modal-bg); 
+            margin: 5% auto; 
+            padding: 30px; 
+            width: 85%; 
+            max-width: 900px; 
+            max-height: 85%; 
+            overflow-y: auto; 
+            border-radius: 16px; 
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .close { 
+            float: right; 
+            font-size: 32px; 
+            cursor: pointer; 
+            color: var(--text-secondary);
+            transition: color 0.2s;
+        }
+        .close:hover { color: var(--text-primary); }
+        .tracks-list { list-style: none; padding: 0; }
+        .track-item { 
+            background: var(--bg-secondary); 
+            margin: 15px 0; 
+            padding: 15px; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        .track-item:hover { 
+            background: #333; 
+            box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+        }
+        .lyrics-editor { 
+            display: none; 
+            margin-top: 15px; 
+            background: var(--input-bg); 
+            padding: 15px; 
+            border-radius: 8px;
+        }
+        .lyrics-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        .lyrics-table td { 
+            padding: 15px; 
+            vertical-align: top; 
+        }
+        .lyrics-table textarea { 
+            width: 100%; 
+            height: 120px; 
+            resize: vertical; 
+            border-radius: 6px;
+            border: 1px solid var(--input-border);
+        }
+        .delete-btn {
+            background: #dc3545;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .delete-btn:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <h1>Ponzo’ Archive</h1>
+    
+    <div class="form-add">
+        <input type="text" id="titolo" placeholder="Titolo album">
+        <input type="text" id="artista" placeholder="Artista">
+        <button onclick="addAlbum()">Aggiungi Album</button>
+    </div>
+    
+    <div id="lista-album"></div>
+    
+    <!-- Modal per dettaglio album -->
+    <div id="modal-album" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modal-titolo"></h2>
+            <img id="modal-copertina" style="width:250px; height:250px; object-fit:cover; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.5);">
+            <input type="file" id="input-copertina" accept="image/*" onchange="uploadCopertina()">
+            <br><textarea id="considerazioni" placeholder="Considerazioni personali sull'ascolto..." rows="5"></textarea>
+            <button onclick="saveConsiderazioni()">Salva Note</button>
+            
+            <h3 style="margin-top:30px;">Tracce</h3>
+            <button onclick="addTrack()">Aggiungi Traccia</button>
+            <ul id="lista-tracks" class="tracks-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        let albums = JSON.parse(localStorage.getItem('albums')) || [];
+        let currentAlbumId = null;
+
+        function saveAlbums() {
+            localStorage.setItem('albums', JSON.stringify(albums));
+            renderAlbums();
+        }
+
+        function renderAlbums() {
+            const lista = document.getElementById('lista-album');
+            lista.innerHTML = '';
+            albums.forEach(album => {
+                const card = document.createElement('div');
+                card.className = 'album-card';
+                card.innerHTML = `
+                    ${album.copertina ? `<img src="${album.copertina}" class="cover" alt="Copertina">` : '<div class="cover" style="background:#333;"></div>'}
+                    <div class="album-info">
+                        <h3>${album.titolo}</h3>
+                        <p>${album.artista}</p>
+                        <small>${album.tracks ? album.tracks.length + ' tracce' : '0 tracce'}</small>
+                        <button class="delete-btn" onclick="deleteAlbum('${album.id}', event)">Elimina</button>
+                    </div>
+                `;
+                card.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') openAlbum(album.id);
+                };
+                lista.appendChild(card);
+            });
+        }
+
+        function deleteAlbum(id, event) {
+            event.stopPropagation();
+            if (confirm('Elimina album?')) {
+                albums = albums.filter(a => a.id !== id);
+                saveAlbums();
+            }
+        }
+
+        function addAlbum() {
+            const titolo = document.getElementById('titolo').value.trim();
+            const artista = document.getElementById('artista').value.trim();
+            if (!titolo || !artista) return alert('Inserisci titolo e artista');
+            
+            const id = Date.now().toString();
+            albums.push({
+                id,
+                titolo,
+                artista,
+                copertina: '',
+                considerazioni: '',
+                tracks: []
+            });
+            saveAlbums();
+            document.getElementById('titolo').value = '';
+            document.getElementById('artista').value = '';
+        }
+
+        function openAlbum(id) {
+            currentAlbumId = id;
+            const album = albums.find(a => a.id === id);
+            document.getElementById('modal-titolo').textContent = `${album.titolo} - ${album.artista}`;
+            const img = document.getElementById('modal-copertina');
+            img.src = album.copertina || '';
+            img.style.display = album.copertina ? 'block' : 'none';
+            document.getElementById('considerazioni').value = album.considerazioni || '';
+            renderTracks();
+            document.getElementById('modal-album').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal-album').style.display = 'none';
+        }
+
+        function uploadCopertina() {
+            const file = document.getElementById('input-copertina').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const album = albums.find(a => a.id === currentAlbumId);
+                album.copertina = e.target.result;
+                saveAlbums();
+                document.getElementById('modal-copertina').src = album.copertina;
+                document.getElementById('modal-copertina').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveConsiderazioni() {
+            const album = albums.find(a => a.id === currentAlbumId);
+            album.considerazioni = document.getElementById('considerazioni').value;
+            saveAlbums();
+        }
+
+        function addTrack() {
+            const album = albums.find(a => a.id === currentAlbumId);
+            const titolo = prompt('Titolo traccia:');
+            if (!titolo) return;
+            album.tracks.push({ titolo, testoIT: '', testoEN: '' });
+            saveAlbums();
+            renderTracks();
+        }
+
+        function renderTracks() {
+            const lista = document.getElementById('lista-tracks');
+            const album = albums.find(a => a.id === currentAlbumId);
+            lista.innerHTML = '';
+            album.tracks.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.className = 'track-item';
+                li.innerHTML = `
+                    <strong>${track.titolo}</strong>
+                    <button class="delete-btn" style="float:right; font-size:14px; padding:4px 8px;" onclick="deleteTrack(${index}, event)">X</button>
+                    <div id="editor-${index}" class="lyrics-editor">
+                        <table class="lyrics-table">
+                            <tr>
+                                <td><strong>Italiano:</strong><br><textarea onchange="saveLyrics(${index}, 'IT', this.value)">${track.testoIT || ''}</textarea></td>
+                                <td><strong>Inglese:</strong><br><textarea onchange="saveLyrics(${index}, 'EN', this.value)">${track.testoEN || ''}</textarea></td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+                li.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'TEXTAREA') {
+                        const editor = li.querySelector('.lyrics-editor');
+                        editor.style.display = editor.style.display === 'block' ? 'none' : 'block';
+                    }
+                };
+                lista.appendChild(li);
+            });
+        }
+
+        function deleteTrack(index, event) {
+            event.stopPropagation();
+            const album = albums.find(a => a.id === currentAlbumId);
+            album.tracks.splice(index, 1);
+            saveAlbums();
+            renderTracks();
+        }
+
+        function saveLyrics(index, lang, testo) {
+            const album = albums.find(a => a.id === currentAlbumId);
+            if (lang === 'IT') album.tracks[index].testoIT = testo;
+            else album.tracks[index].testoEN = testo;
+            saveAlbums();
+        }
+
+        // Inizializza
+        renderAlbums();
+        window.onclick = (e) => {
+            const modal = document.getElementById('modal-album');
+            if (e.target === modal) closeModal();
+        };
+    </script>
+</body>
+</html>
