@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Archivio Consapevolezza</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0b0b0b; --card: #181818; --accent: #1DB954; --text: #ececec; --sub: #a0a0a0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; }
+        
+        h1 { font-size: 1.6rem; margin-top: 40px; color: var(--accent); text-align: center; letter-spacing: -0.5px; }
+        
+        /* Backup Buttons */
+        .backup-btns { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .btn-small { background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 10px 15px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; font-weight: 600; }
+
+        #search { width: 100%; padding: 16px; border-radius: 12px; border: 1px solid #333; background: #1a1a1a; color: white; margin-bottom: 20px; box-sizing: border-box; font-size: 1rem; }
+
+        /* Album Card */
+        .album-card { background: var(--card); border-radius: 18px; padding: 18px; margin-bottom: 20px; border: 1px solid #222; transition: 0.3s ease; }
+        .album-card.completed { border-color: var(--accent); opacity: 0.75; }
+        
+        .album-header { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+        .cover { width: 90px; height: 90px; border-radius: 10px; object-fit: cover; box-shadow: 0 6px 15px rgba(0,0,0,0.6); background: #222; }
+        .info { flex: 1; }
+
+        .title { font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; line-height: 1.2; }
+        .artist { color: var(--sub); font-size: 0.9rem; margin-bottom: 6px; }
+        .rym-badge { display: inline-block; background: rgba(29, 185, 84, 0.1); color: var(--accent); padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: 700; }
+
+        /* Notes Area */
+        .notes-box { width: 100%; background: #222; border: 1px solid #333; color: #ddd; padding: 12px; border-radius: 10px; margin: 12px 0; font-family: inherit; font-size: 0.9rem; resize: none; box-sizing: border-box; line-height: 1.4; }
+        .notes-box:focus { border-color: #555; outline: none; }
+
+        .actions { display: flex; gap: 10px; }
+        .play-btn { flex: 2; background: var(--accent); color: #000; text-decoration: none; padding: 14px; border-radius: 10px; font-weight: 700; text-align: center; font-size: 0.9rem; }
+        .check-btn { flex: 1; background: #333; color: #fff; border: none; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>🎧 Archivio Personale</h1>
+    
+    <div class="backup-btns">
+        <button class="btn-small" onclick="exportData()">📤 ESPORTA BACKUP</button>
+        <button class="btn-small" onclick="document.getElementById('importFile').click()">📥 IMPORTA</button>
+        <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+    </div>
+
+    <input type="text" id="search" placeholder="Cerca un'emozione, artista o genere..." onkeyup="filter()">
+
+    <div id="list">
+        </div>
+
+<script>
+// DATABASE INIZIALE CON LE 10 COPERTINE
+const initialAlbums = [
+    { id: 1, title: "Animals", artist: "Pink Floyd (1977)", tags: "70s prog society", rym: "4.29", cover: "https://upload.wikimedia.org/wikipedia/en/7/74/Pink_Floyd-Animals-Frontal.jpg", note: "" },
+    { id: 2, title: "To Pimp a Butterfly", artist: "Kendrick Lamar (2015)", tags: "jazz rap 2010s", rym: "4.35", cover: "https://upload.wikimedia.org/wikipedia/en/f/f6/Kendrick_Lamar_-_To_Pimp_a_Butterfly.png", note: "" },
+    { id: 3, title: "OK Computer", artist: "Radiohead (1997)", tags: "90s art rock dystopian", rym: "4.27", cover: "https://upload.wikimedia.org/wikipedia/en/b/ba/Radioheadokcomputer.png", note: "" },
+    { id: 4, title: "Wish You Were Here", artist: "Pink Floyd (1975)", tags: "70s sunset soul", rym: "4.30", cover: "https://upload.wikimedia.org/wikipedia/en/a/a4/Pink_Floyd%2C_Wish_You_Were_Here_%281975%29.png", note: "" },
+    { id: 5, title: "Ko de mondo", artist: "C.S.I. (1994)", tags: "italia 90s ferretti", rym: "4.10", cover: "https://upload.wikimedia.org/wikipedia/it/0/0d/CSI_-_Ko_de_mondo.jpg", note: "" },
+    { id: 6, title: "Adore", artist: "Smashing Pumpkins (1998)", tags: "gothic 90s twilight", rym: "3.55", cover: "https://upload.wikimedia.org/wikipedia/en/e/e0/SmashingPumpkinsAdore.png", note: "" },
+    { id: 7, title: "Laughing Stock", artist: "Talk Talk (1991)", tags: "post-rock silence spiritual", rym: "4.22", cover: "https://upload.wikimedia.org/wikipedia/en/a/a2/Talk_Talk_-_Laughing_Stock.jpg", note: "" },
+    { id: 8, title: "Ladies and Gentlemen...", artist: "Spiritualized (1997)", tags: "space rock gospel", rym: "4.10", cover: "https://upload.wikimedia.org/wikipedia/en/3/3b/Spiritualized_-_Ladies_and_Gentlemen_We_Are_Floating_in_Space.png", note: "" },
+    { id: 9, title: "Spiderland", artist: "Slint (1991)", tags: "dark mystery 90s", rym: "4.20", cover: "https://upload.wikimedia.org/wikipedia/en/2/23/Slint_-_Spiderland.jpg", note: "" },
+    { id: 10, title: "In the Court...", artist: "King Crimson (1969)", tags: "60s prog majestic", rym: "4.30", cover: "https://upload.wikimedia.org/wikipedia/en/8/84/In_the_Court_of_the_Crimson_King_-_Volumes_One_and_Two.jpg", note: "" }
+];
+
+// Caricamento dati (se esistono in memoria usa quelli, altrimenti usa i 10 iniziali)
+let myData = JSON.parse(localStorage.getItem('myMusicData')) || initialAlbums;
+
+function render() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    myData.forEach((album, index) => {
+        list.innerHTML += `
+            <div class="album-card ${album.done ? 'completed' : ''}" id="card-${index}">
+                <div class="album-header">
+                    <img src="${album.cover}" class="cover" alt="cover">
+                    <div class="info">
+                        <div class="title">${album.title}</div>
+                        <div class="artist">${album.artist}</div>
+                        <div class="rym-badge">⭐ RYM: ${album.rym}</div>
+                    </div>
+                </div>
+                <textarea class="notes-box" placeholder="Note di consapevolezza..." oninput="updateNote(${index}, this.value)">${album.note || ''}</textarea>
+                <div class="actions">
+                    <a href="spotify:search:${encodeURIComponent(album.artist + ' ' + album.title)}" class="play-btn">ASCOLTA</a>
+                    <button class="check-btn" onclick="toggle(${index})">${album.done ? 'FATTO' : 'DA FARE'}</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function updateNote(index, val) {
+    myData[index].note = val;
+    save();
+}
+
+function toggle(index) {
+    myData[index].done = !myData[index].done;
+    save();
+    render();
+}
+
+function save() {
+    localStorage.setItem('myMusicData', JSON.stringify(myData));
+}
+
+function filter() {
+    let q = document.getElementById('search').value.toLowerCase();
+    myData.forEach((album, i) => {
+        let text = (album.title + album.artist + album.tags).toLowerCase();
+        document.getElementById(`card-${i}`).classList.toggle('hidden', !text.includes(q));
+    });
+}
+
+function exportData() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myData));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "backup_musica.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+function importData(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            myData = JSON.parse(e.target.result);
+            save();
+            render();
+            alert("Backup caricato con successo!");
+        } catch (err) {
+            alert("Errore nel file di backup.");
+        }
+    };
+    reader.readAsText(event.target.files[0]);
+}
+
+render();
+</script>
+</body>
+</html>
